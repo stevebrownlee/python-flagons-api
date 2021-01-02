@@ -4,30 +4,46 @@ from teams.request import get_teams
 
 
 class HandleRequests(BaseHTTPRequestHandler):
+    def parse_query_string_parameters(self, params):
+        filters = {}
+        pairs = params.split("&")
+        for pair in pairs:
+            [key, value] = pair.split("=")
+            if key in filters:
+                filters[key]['resources'].append(value)
+            else:
+                filters[key] = { 'resources': [value] }
+
+        return filters
+
     def parse_url(self, path):
-        path_params = path.split("/")
-        resource = path_params[1]
+        id = None
+        filters = None
+        url_parts = path.split("/")
+        url_parts.pop(0)
 
+        resource = url_parts[0]
         if "?" in resource:
-            param = resource.split("?")[1]
-            resource = resource.split("?")[0]
-            pair = param.split("=")
-            key = pair[0]
-            value = pair[1]
+            [resource, params] =  resource.split("?")
+            filters = self.parse_query_string_parameters(params)
 
-            print(resource, key, value)
-            return (resource, key, value)
-        else:
-            id = None
+        try:
+            route_parameters = url_parts[1]
+            if "?" in route_parameters:
+                [id, params] = route_parameters.split("?")
+                id = int(id)
+                filters = self.parse_query_string_parameters(params)
+            else:
+                try:
+                    id = int(route_parameters)
+                except IndexError:
+                    pass  # No route parameter exists: /animals
+                except ValueError:
+                    pass  # Request had trailing slash: /animals/
+        except IndexError:
+            pass  # No route parameter exists
 
-            try:
-                id = int(path_params[2])
-            except IndexError:
-                pass  # No route parameter exists: /animals
-            except ValueError:
-                pass  # Request had trailing slash: /animals/
-
-            return (resource, id)
+        return (resource, id, filters)
 
     def _set_headers(self, status):
         self.send_response(status)
@@ -48,8 +64,8 @@ class HandleRequests(BaseHTTPRequestHandler):
         self._set_headers(200)
 
         response = {}
-        parsed = self.parse_url(self.path)
-        response = f"{get_teams()}"
+        (resource, id, filters) = self.parse_url(self.path)
+        response = f"{get_teams(filters)}"
 
         self.wfile.write(response.encode())
 

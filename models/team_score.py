@@ -1,7 +1,7 @@
 class TeamScore():
 
-    def __init__(self, id, teamId, teamScore, timeStamp):
+    def __init__(self, id, team_id, team_score, timestamp):
         self.id = id
-        self.teamId = teamId
-        self.teamScore = teamScore
-        self.timeStamp = timeStamp
+        self.team_id = team_id
+        self.score = team_score
+        self.timestamp = timestamp
